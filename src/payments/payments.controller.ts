@@ -6,7 +6,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
   @Post('create-payment-session')
   createrPaymentSession() {
-    return { h: 'hello' };
+    return this.paymentsService.createPaymentSession();
   }
   @Get('success')
   success() {
