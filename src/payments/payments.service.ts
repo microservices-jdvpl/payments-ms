@@ -28,15 +28,15 @@ export class PaymentsService {
       },
       line_items: lineItems,
       mode: 'payment',
-      success_url: `http://localhost:${envs.PORT}/api/payments/success`,
-      cancel_url: `http://localhost:${envs.PORT}/api/payments/cancel`,
+      success_url: envs.STRIPE_SUCCESS_URL,
+      cancel_url: envs.STRIPE_CANCEL_URL,
     });
     return session;
   }
   async stripeWebHoolk(req: Request, res: Response) {
     // const endpointSecret =
     // 'whsec_96dc94c7eecffb07649d3f5bcce93cc7869ba3adc238222282a609cb399855d6';
-    const endpointSecret = 'whsec_8WetH7wjlibW6L9WFFooPGDrYIcyYZrs';
+    const endpointSecret = envs.STRIPE_ENDPOINTSECRET;
     const sig = req.headers['stripe-signature'];
     let event: Stripe.Event;
 
