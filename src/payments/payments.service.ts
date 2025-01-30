@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { envs } from 'src/config/env';
 import Stripe from 'stripe';
 import { PaymentSessionDto } from './dto/payment-session.dto';
 import { Request, Response } from 'express';
+import { NATS_SERVICE } from 'src/shared/constants';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class PaymentsService {
   private readonly stripe = new Stripe(envs.STRIPE_SECRET);
+  private readonly logger = new Logger(PaymentsService.name);
 
+  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
   async createPaymentSession(paymentSessionDto: PaymentSessionDto) {
     const { currency, items, orderId } = paymentSessionDto;
     const lineItems = items.map((item) => ({
@@ -31,11 +35,13 @@ export class PaymentsService {
       success_url: envs.STRIPE_SUCCESS_URL,
       cancel_url: envs.STRIPE_CANCEL_URL,
     });
-    return session;
+    return {
+      cancelUrl: session.cancel_url,
+      successUrl: session.success_url,
+      url: session.url,
+    };
   }
   async stripeWebHoolk(req: Request, res: Response) {
-    // const endpointSecret =
-    // 'whsec_96dc94c7eecffb07649d3f5bcce93cc7869ba3adc238222282a609cb399855d6';
     const endpointSecret = envs.STRIPE_ENDPOINTSECRET;
     const sig = req.headers['stripe-signature'];
     let event: Stripe.Event;
@@ -51,13 +57,16 @@ export class PaymentsService {
       res.status(400).send(`Webhook Error: ${error.message}`);
       return;
     }
-    console.log({ event });
+
     switch (event.type) {
       case 'charge.succeeded':
         const chargeSuceded = event.data.object;
-        console.log({
-          metadata: chargeSuceded.metadata,
-        });
+        const pyaload = {
+          stripePaymentId: chargeSuceded.id,
+          orderId: chargeSuceded.metadata.orderId,
+          receiptUrl: chargeSuceded.receipt_url,
+        };
+        this.client.emit('payment.succeeded', pyaload);
         break;
       default:
         console.log(`Event ${event.type} not handled`);
