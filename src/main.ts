@@ -35,6 +35,6 @@ async function bootstrap() {
     ],
   });
   await app.listen(envs.PORT);
-  logger.log(`Payments-ms is running on http://localhost:${envs.PORT}`);
+  logger.debug(`Payments-ms is running on http://localhost:${envs.PORT}`);
 }
 bootstrap();
