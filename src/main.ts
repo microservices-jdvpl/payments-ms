@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { envs } from './config/env';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
@@ -26,7 +26,14 @@ async function bootstrap() {
     { inheritAppConfig: true },
   );
   await app.startAllMicroservices();
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: [
+      {
+        path: '',
+        method: RequestMethod.GET,
+      },
+    ],
+  });
   await app.listen(envs.PORT);
   logger.log(`Payments-ms is running on http://localhost:${envs.PORT}`);
 }
